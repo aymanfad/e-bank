@@ -1,9 +1,6 @@
 package com.exemple.ebankbackend;
 
-import com.exemple.ebankbackend.entities.AccountOperation;
-import com.exemple.ebankbackend.entities.CurrentAccount;
-import com.exemple.ebankbackend.entities.Customer;
-import com.exemple.ebankbackend.entities.SavingAccount;
+import com.exemple.ebankbackend.entities.*;
 import com.exemple.ebankbackend.enums.AccountStatus;
 import com.exemple.ebankbackend.enums.OperationType;
 import com.exemple.ebankbackend.repositories.AccountOperationRepository;
