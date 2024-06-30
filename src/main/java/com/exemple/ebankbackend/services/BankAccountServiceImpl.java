@@ -1,25 +1,25 @@
 package com.exemple.ebankbackend.services;
 
-import com.exemple.ebankbackend.entities.BankAccount;
-import com.exemple.ebankbackend.entities.CurrentAccount;
-import com.exemple.ebankbackend.entities.Customer;
-import com.exemple.ebankbackend.entities.SavingAccount;
+import com.exemple.ebankbackend.dtos.CustomerDTO;
+import com.exemple.ebankbackend.entities.*;
+import com.exemple.ebankbackend.enums.OperationType;
 import com.exemple.ebankbackend.exceptions.BalanceNotSufficientException;
 import com.exemple.ebankbackend.exceptions.BankAccountNotFoundException;
 import com.exemple.ebankbackend.exceptions.CustomerNotFoundException;
+import com.exemple.ebankbackend.mappers.BankAccountMapperImpl;
 import com.exemple.ebankbackend.repositories.AccountOperationRepository;
 import com.exemple.ebankbackend.repositories.BankAccountRepository;
 import com.exemple.ebankbackend.repositories.CustomerRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -29,6 +29,7 @@ public class BankAccountServiceImpl implements BankAccountService {
     private CustomerRepository customerRepository;
     private BankAccountRepository bankAccountRepository;
     private AccountOperationRepository accountOperationRepository;
+    private BankAccountMapperImpl bankAccountMapper;
 
     @Override
     public Customer saveCustomer(Customer customer) {
@@ -73,9 +74,21 @@ public class BankAccountServiceImpl implements BankAccountService {
 
 
     @Override
-    public List<Customer> listCustomers() {
-        return customerRepository.findAll();
+    public List<CustomerDTO> listCustomers() {
+        List<Customer> customers = customerRepository.findAll();
+/*        List<CustomerDTO> customerDTOS=new ArrayList<>();
+
+        for (Customer customer : customers) {
+            CustomerDTO customerDTO = bankAccountMapper.fromCustomer(customer);
+            customerDTOS.add(customerDTO);
+        }*/
+
+        List<CustomerDTO> customerDTOS = customers.stream().map(customer -> bankAccountMapper.fromCustomer(customer))
+                .collect(Collectors.toList());
+        log.info("Fetched customers: {}", customerDTOS);
+        return customerDTOS;
     }
+
 
     @Override
     public BankAccount getBankAccount(String accountId) throws BankAccountNotFoundException {
@@ -89,18 +102,41 @@ public class BankAccountServiceImpl implements BankAccountService {
         BankAccount bankAccount=getBankAccount(accountId);
         if (bankAccount.getBalance() < amount) {
             throw new BalanceNotSufficientException("Balance not sufficient");
-        }else {
-            bankAccount.setBalance(bankAccount.getBalance() - amount);
         }
+
+        AccountOperation accountOperation = new AccountOperation();
+        accountOperation.setType(OperationType.DEBIT);
+        accountOperation.setAmount(amount);
+        accountOperation.setDescription(description);
+        accountOperation.setOperationDate(new Date());
+        accountOperation.setBankAccount(bankAccount);
+        accountOperationRepository.save(accountOperation);
+        bankAccount.setBalance(bankAccount.getBalance() - amount);
+        bankAccountRepository.save(bankAccount);
+
     }
 
     @Override
-    public void credit(String accountId, double amount, String description) {
-
+    public void credit(String accountId, double amount, String description) throws BankAccountNotFoundException {
+        BankAccount bankAccount=getBankAccount(accountId);
+        AccountOperation accountOperation = new AccountOperation();
+        accountOperation.setType(OperationType.CREDIT);
+        accountOperation.setAmount(amount);
+        accountOperation.setDescription(description);
+        accountOperation.setOperationDate(new Date());
+        accountOperation.setBankAccount(bankAccount);
+        accountOperationRepository.save(accountOperation);
+        bankAccount.setBalance(bankAccount.getBalance() + amount);
+        bankAccountRepository.save(bankAccount);
     }
 
     @Override
-    public void transfer(String accountIdSource, String accountIdDestination, double amount) {
-
+    public void transfer(String accountIdSource, String accountIdDestination, double amount) throws BankAccountNotFoundException, BalanceNotSufficientException {
+        debit(accountIdSource,amount,"Transfer to "+accountIdDestination);
+        credit(accountIdDestination,amount,"Transfer from "+accountIdSource);
+    }
+    @Override
+    public List<BankAccount> bankAccountList(){
+        return bankAccountRepository.findAll();
     }
 }
