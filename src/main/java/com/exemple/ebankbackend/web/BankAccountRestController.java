@@ -1,12 +1,11 @@
 package com.exemple.ebankbackend.web;
 
 import com.exemple.ebankbackend.dtos.*;
-import com.exemple.ebankbackend.entities.AccountOperation;
-import com.exemple.ebankbackend.entities.BankAccount;
 import com.exemple.ebankbackend.exceptions.BalanceNotSufficientException;
 import com.exemple.ebankbackend.exceptions.BankAccountNotFoundException;
 import com.exemple.ebankbackend.services.BankAccountService;
 import lombok.AllArgsConstructor;
+import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,26 +19,30 @@ public class BankAccountRestController {
     public BankAccountDTO getBankAccount(@PathVariable String accountId) throws BankAccountNotFoundException {
         return bankAccountService.getBankAccount(accountId);
     }
-@GetMapping("/accounts")
-public List<BankAccountDTO> listAccounts() {
-        return  bankAccountService.bankAccountList();
-}
-@GetMapping("/accounts/{accountId}/pageOperations")
-public AccountHistoryDTO getAccountHistory(@PathVariable String accountId,
-                                           @RequestParam(name = "page", defaultValue = "0") int page,
-                                           @RequestParam(name = "size",defaultValue = "5") int size) throws BankAccountNotFoundException {
-        return bankAccountService.getAccountHistory(accountId,page,size);
-}
+    @GetMapping("/accounts")
+    public List<BankAccountDTO> listAccounts() {
+            return  bankAccountService.bankAccountList();
+    }
+    @GetMapping("/accounts/{accountId}/pageOperations")
+    public AccountHistoryDTO getAccountHistory(@PathVariable String accountId,
+                                               @RequestParam(name = "page", defaultValue = "0") int page,
+                                               @RequestParam(name = "size",defaultValue = "5") int size) throws BankAccountNotFoundException {
+            return bankAccountService.getAccountHistory(accountId,page,size);
+    }
 
-@PostMapping("/accounts/debit")
-public DebitDTO debit(@RequestBody DebitDTO debitDTO) throws BankAccountNotFoundException, BalanceNotSufficientException {
-        this.bankAccountService.debit(debitDTO.getAcountId(),debitDTO.getAmount(),debitDTO.getDescription());
-        return debitDTO;
-}
+    @PostMapping("/accounts/debit")
+    public DebitDTO debit(@RequestBody DebitDTO debitDTO) throws BankAccountNotFoundException, BalanceNotSufficientException {
+            Assert.notNull(debitDTO.getAccountId(), "Account ID must not be null");
+            this.bankAccountService.debit(debitDTO.getAccountId(),debitDTO.getAmount(),debitDTO.getDescription());
+            System.out.println("debit success");
+            return debitDTO;
+    }
 
     @PostMapping("/accounts/credit")
-    public CreditDTO cebit(@RequestBody CreditDTO creditDTO) throws BankAccountNotFoundException {
-        this.bankAccountService.credit(creditDTO.getAcountId(),creditDTO.getAmount(),creditDTO.getDescription());
+    public CreditDTO credit(@RequestBody CreditDTO creditDTO) throws BankAccountNotFoundException {
+        Assert.notNull(creditDTO.getAccountId(), "Account ID must not be null");
+        this.bankAccountService.credit(creditDTO.getAccountId(),creditDTO.getAmount(),creditDTO.getDescription());
+        System.out.println("credit success");
         return creditDTO;
     }
 
@@ -50,5 +53,6 @@ public DebitDTO debit(@RequestBody DebitDTO debitDTO) throws BankAccountNotFound
 
         this.bankAccountService.transfer(transferRequestDTO.getAccountSource(),
                 transferRequestDTO.getAccountDestination(),transferRequestDTO.getAmount());
+        System.out.println("transfer success");
     }
 }

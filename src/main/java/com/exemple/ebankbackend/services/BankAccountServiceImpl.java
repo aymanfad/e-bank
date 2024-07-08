@@ -109,38 +109,34 @@ public class BankAccountServiceImpl implements BankAccountService {
     @Override
     public void debit(String accountId, double amount, String description) throws BankAccountNotFoundException, BalanceNotSufficientException {
         //BankAccount bankAccount=getBankAccount(accountId);
-        BankAccount bankAccount = bankAccountRepository.findById(accountId)
+        BankAccount bankAccount=bankAccountRepository.findById(accountId)
                 .orElseThrow(()->new BankAccountNotFoundException("BankAccount not found"));
-
-        if (bankAccount.getBalance() < amount) {
+        if(bankAccount.getBalance()<amount)
             throw new BalanceNotSufficientException("Balance not sufficient");
-        }
-
-        AccountOperation accountOperation = new AccountOperation();
+        AccountOperation accountOperation=new AccountOperation();
         accountOperation.setType(OperationType.DEBIT);
         accountOperation.setAmount(amount);
         accountOperation.setDescription(description);
         accountOperation.setOperationDate(new Date());
         accountOperation.setBankAccount(bankAccount);
         accountOperationRepository.save(accountOperation);
-        bankAccount.setBalance(bankAccount.getBalance() - amount);
+        bankAccount.setBalance(bankAccount.getBalance()-amount);
         bankAccountRepository.save(bankAccount);
 
     }
 
     @Override
     public void credit(String accountId, double amount, String description) throws BankAccountNotFoundException {
-        //BankAccount bankAccount=getBankAccount(accountId);
-        BankAccount bankAccount = bankAccountRepository.findById(accountId)
+        BankAccount bankAccount=bankAccountRepository.findById(accountId)
                 .orElseThrow(()->new BankAccountNotFoundException("BankAccount not found"));
-        AccountOperation accountOperation = new AccountOperation();
+        AccountOperation accountOperation=new AccountOperation();
         accountOperation.setType(OperationType.CREDIT);
         accountOperation.setAmount(amount);
         accountOperation.setDescription(description);
         accountOperation.setOperationDate(new Date());
         accountOperation.setBankAccount(bankAccount);
         accountOperationRepository.save(accountOperation);
-        bankAccount.setBalance(bankAccount.getBalance() + amount);
+        bankAccount.setBalance(bankAccount.getBalance()+amount);
         bankAccountRepository.save(bankAccount);
     }
 
